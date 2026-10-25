@@ -1,0 +1,100 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vllm-gemma-deployment
+  namespace: vllm-example
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  progressDeadlineSeconds: 1800
+  selector:
+    matchLabels:
+      app: gemma-server
+  template:
+    metadata:
+      labels:
+        app: gemma-server
+    spec:
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      terminationGracePeriodSeconds: 60
+      nodeSelector:
+        kubernetes.io/arch: arm64
+      containers:
+        - name: inference-server
+          image: vllm/vllm-openai-cpu:v0.30.0-arm64@sha256:09e656588c2dc572240cb62a22f75681dc640a99c61537bbd55e9eb1dc3d4fbc
+          imagePullPolicy: IfNotPresent
+          command: [python3, -m, vllm.entrypoints.openai.api_server]
+          args:
+            - --model=google/gemma-3-1b-it
+            - --host=0.0.0.0
+            - --port=8080
+            - --dtype=bfloat16
+            - --max-model-len=256
+            - --max-num-seqs=1
+            - --max-num-batched-tokens=128
+            - --kv-cache-memory-bytes=268435456
+            - --enforce-eager
+            - --distributed-executor-backend=uni
+          ports:
+            - name: http
+              containerPort: 8080
+          resources:
+            requests:
+              cpu: "1"
+              memory: 4Gi
+            limits:
+              cpu: "2"
+              memory: 6Gi
+          env:
+            - name: HF_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: hf-secret
+                  key: hf_token
+            - name: HF_HOME
+              value: /model-cache/huggingface
+            - name: VLLM_ENABLE_V1_MULTIPROCESSING
+              value: "0"
+            - name: VLLM_CPU_OMP_THREADS_BIND
+              value: nobind
+            - name: OMP_NUM_THREADS
+              value: "1"
+            - name: VLLM_CPU_NUM_OF_RESERVED_CPU
+              value: "1"
+            - name: DO_NOT_TRACK
+              value: "1"
+          volumeMounts:
+            - name: model-cache
+              mountPath: /model-cache
+            - name: shared-memory
+              mountPath: /dev/shm
+          startupProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 180
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 5
+      volumes:
+        - name: model-cache
+          persistentVolumeClaim:
+            claimName: gemma-model-cache
+        - name: shared-memory
+          emptyDir:
+            medium: Memory
+            sizeLimit: 256Mi

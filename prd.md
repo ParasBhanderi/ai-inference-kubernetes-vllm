@@ -7,7 +7,7 @@ Reproduce the learning goals of https://github.com/kubernetes/examples/tree/mast
 - No paid infrastructure, paid API or cloud subscription.
 - Apple M2 Pro, 16 GB host RAM, 512 GB total host disk.
 - Minikube with VFkit; Docker Desktop not required.
-- NVIDIA manifest cannot run unchanged. Local vLLM CPU execution remains unverified.
+- NVIDIA manifest cannot run unchanged. Local vLLM CPU inference is verified on the constrained 0.30.0 configuration.
 - Explain each stage before the beginner user executes it.
 - Do not substitute another serving engine without discussing a scope change.
 
@@ -27,8 +27,8 @@ Reproduce the learning goals of https://github.com/kubernetes/examples/tree/mast
 - [x] ARM64 CPU features inspected; asimd and bf16 present.
 - [x] User granted access to Gemma and created a Read token.
 - [x] Namespace and Secret created and verified (metadata only; model access test pending).
-- [ ] ARM64 vLLM image and resource settings validated.
-- [ ] Inference returns a generated response.
+- [x] ARM64 vLLM image and resource settings validated with actual inference.
+- [x] Inference returns a complete generated response.
 - [ ] Documentation and reproducibility reviewed.
 - [ ] GitHub repository published.
 

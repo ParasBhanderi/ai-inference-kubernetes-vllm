@@ -1,0 +1,11 @@
+{
+  "model": "google/gemma-3-1b-it",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Explain Kubernetes in two short sentences."
+    }
+  ],
+  "max_tokens": 64,
+  "temperature": 0
+}

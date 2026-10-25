@@ -1,56 +1,60 @@
 # AI Inference on Kubernetes with vLLM
 
-A work-in-progress lab for serving Google Gemma with vLLM on local Kubernetes, adapting the upstream NVIDIA GPU example to an Apple Silicon Linux ARM64 CPU environment. No cloud subscription or paid API is planned.
+Serve Google Gemma 3 1B IT with vLLM on local Kubernetes using an Apple Silicon CPU, without a cloud subscription or paid inference API.
 
-Repository: https://github.com/ParasBhanderi/ai-inference-kubernetes-vllm
+**Status: local inference verified on 2026-10-25.** Gemma weights downloaded to persistent storage; a chat-completion request through the Kubernetes Service returned a complete generated answer. This is a functional lab, not a production deployment or performance benchmark.
 
-## Status
-Kubernetes setup is verified. The recreated cluster has 8192 MB RAM, two CPU cores, and a Ready node. Gemma access has been granted and the user has created a Hugging Face Read token. Namespace, token authentication and Gemma configuration download are verified. The ARM64 vLLM 0.32.0 image import check completed successfully. Model weights have not been downloaded; local inference is not yet validated.
+Adapted from [AI Inference with vLLM on Kubernetes](https://github.com/kubernetes/examples/tree/master/AI/vllm-deployment). The upstream NVIDIA image is replaced by a digest-pinned ARM64 CPU image; model serving remains vLLM with google/gemma-3-1b-it.
 
-## Scope
-Follow [AI Inference with vLLM on Kubernetes](https://github.com/kubernetes/examples/tree/master/AI/vllm-deployment), keeping vLLM and `google/gemma-3-1b-it`. Document CPU-specific changes explicitly. An Nginx exercise is optional and outside the required project path.
+## Working configuration
+| Component | Setting |
+| --- | --- |
+| Host | Apple M2 Pro, 16 GB RAM |
+| Cluster | Minikube + VFkit/NAT; 2 CPUs, 8192 MB VM RAM |
+| Server | vLLM 0.30.0 ARM64 CPU, BF16, eager execution, uni executor |
+| Resources | 1 CPU/4 GiB requested; 2 CPU/6 GiB limits |
+| Inference | 256-token context; 128-token batch; one sequence; 256 MiB KV cache |
+| Model cache | 8 GiB ReadWriteOnce PVC; approximately 1.9 GiB used by Hugging Face cache |
+| Access | ClusterIP port 8080 plus localhost port forwarding |
 
-## Stack
-Apple M2 Pro / 16 GB host RAM; macOS Terminal; VFkit; Minikube; Kubernetes; containerd; kubectl; planned vLLM ARM64 CPU image; Gemma 3 1B IT; Kubernetes YAML; curl and JSON.
+Docker Desktop is not required. Kubernetes uses containerd inside the Linux VM. Hugging Face model access and a Read token are required.
 
 ## Documentation
 - [Requirements](prd.md)
 - [Architecture](Architecture.md)
-- [Progress and resume point](Memory.md)
+- [Setup and credentials](docs/setup.md)
+- [Deployment and sample request](docs/deployment.md)
+- [Verification record](docs/verification.md)
+- [Troubleshooting](docs/troubleshooting.md)
+- [Project state](Memory.md)
 
-## Cluster setup
-For a NEW cluster:
+## Deploy
+Complete [setup](docs/setup.md), including the namespace and token Secret, first. Then from the repository root:
 ```bash
-minikube start --driver=vfkit --network=nat --cpus=2 --memory=8192
-kubectl get nodes
-minikube ssh -- "free -h"
+kubectl --context=minikube apply -f manifests/model-cache-pvc.yaml -f manifests/vllm-deployment.yaml -f manifests/vllm-service.yaml
+kubectl --context=minikube -n vllm-example get pods,pvc,svc
 ```
-The existing 4 GB cluster could not be resized with stop/start; it was deleted and recreated before any application deployment. Deleting a cluster removes its resources and VM data and is not a routine restart procedure.
+Initial startup downloads weights; monitor logs as described in the deployment guide.
 
-For a break:
+Forward the Service in one Terminal:
+```bash
+kubectl --context=minikube -n vllm-example port-forward service/vllm-service 8080:8080 --address=127.0.0.1
+```
+Send a request in another:
+```bash
+curl --fail --silent --show-error http://127.0.0.1:8080/v1/chat/completions -H 'Content-Type: application/json' --data-binary @examples/chat-request.json
+```
+A recorded actual response is in [examples/chat-response.json](examples/chat-response.json).
+
+## Operational findings
+vLLM 0.32.0 imported successfully and reached readiness after memory tuning but failed on actual inference with a CPU slot-mapping error. v0.18.0 exceeded the memory limit during startup. The final 0.30.0 configuration passed inference. Details are in troubleshooting.md.
+
+## Storage and credentials
+Model weights stay in the PVC and out of Git. Never commit tokens, rendered Secret YAML, kubeconfig or private screenshots. The single-node cache survives Pod replacement and Minikube stop/start, but not cluster deletion. The PVC and container images share the VM disk. Model revision pinning, restart testing, load testing, and SLOs remain future work.
+
+## Stop and resume
 ```bash
 minikube stop
-```
-To resume the existing cluster:
-```bash
 minikube start
-kubectl get nodes
 ```
-
-## Remaining work
-1. Completed: namespace, Secret and gated-model access verification; see [setup](docs/setup.md).
-2. Verify and pin an ARM64 CPU image; check its size and CPU compatibility.
-3. Prepare deployment, Service, storage and resource configuration for Gemma.
-4. Deploy, port-forward and verify an actual generated response.
-5. Document troubleshooting, restart behavior and cleanup; publish verified results.
-
-## Credentials and model files
-Never commit Hugging Face tokens, Secret manifests containing credentials, kubeconfig, model weights or personal screenshots. Model license acceptance does not prove that inference works locally.
-
-## References
-- https://minikube.sigs.k8s.io/docs/drivers/vfkit/
-- https://docs.vllm.ai/en/latest/getting_started/installation/cpu/
-- https://huggingface.co/google/gemma-3-1b-it
-- https://kubernetes.io/docs/tasks/configmap-secret/managing-secret-using-kubectl/
-
-Verification details: [image and model access checks](docs/verification.md).
+These commands preserve the existing cluster; deletion is not a routine restart.

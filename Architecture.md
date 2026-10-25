@@ -1,42 +1,32 @@
 # Architecture and Technology Stack
 
-## Target request path
+## Verified request path
 ```text
-Mac Terminal / curl
-  -> localhost port forwarding
-  -> Kubernetes ClusterIP Service
-  -> Pod running vLLM CPU server
-  -> google/gemma-3-1b-it
-  -> generated JSON response
+Mac curl -> localhost port-forward -> ClusterIP Service:8080
+  -> vLLM CPU Pod -> Gemma 3 1B IT -> generated JSON response
 ```
 
-Minikube manages a Linux ARM64 VM provided by VFkit. Kubernetes uses containerd. Model execution is planned on the VM CPU; Apple GPU acceleration is not assumed.
+Minikube manages a Linux ARM64 VM using VFkit/NAT. Kubernetes runs containers with containerd. Apple GPU acceleration is not used.
 
-## Stack and state
-| Component | Choice | State |
-| --- | --- | --- |
-| Host | M2 Pro, 16 GB RAM | Confirmed |
-| Local VM | VFkit / NAT | Working |
-| Cluster | Minikube, Kubernetes v1.37.0 | Ready in screenshot |
-| Runtime | containerd 2.3.4 | Startup output |
-| CLI | kubectl in macOS Terminal | Working |
-| Model server | vLLM Linux ARM64 CPU image | 0.32.0 image imports verified; inference pending |
-| Model | google/gemma-3-1b-it | config.json download verified; weights not downloaded |
-| Credentials | hf-secret, key hf_token | Created; screenshot verified |
-| Namespace | vllm-example | Created; screenshot verified |
-| Exposure | ClusterIP plus local port forwarding | Planned |
+## Runtime configuration
+- Host: M2 Pro, 16 GB RAM. VM: 2 CPUs, 8192 MB RAM.
+- vLLM 0.30.0 ARM64 CPU image pinned by SHA256 in the Deployment.
+- Model: google/gemma-3-1b-it, BF16; upstream model revision currently follows its default branch.
+- Eager execution; uni executor; VLLM_ENABLE_V1_MULTIPROCESSING=0 avoids the CPU executor auto-switch; OpenMP nobind with one thread.
+- 256-token total context, 128-token prefill batches, one sequence, explicit 256 MiB KV cache.
+- Container requests 1 CPU/4 GiB RAM, limits 2 CPU/6 GiB RAM.
+- Recreate strategy prevents overlapping replicas on this constrained node.
+- Startup, readiness and liveness use HTTP /health. Startup allows 30 minutes for initial loading.
+- Namespace vllm-example; hf-secret key hf_token supplies HF_TOKEN; no embedded credentials.
+- Service is ClusterIP on 8080. Local forwarding binds only 127.0.0.1.
 
-## Resources and storage
-Cluster recreated with two CPUs and 8192 MB RAM. Screenshot shows 7.8 GiB total and 6.1 GiB available after startup. Previous VM inspection showed a roughly 20 GB virtual disk with 16 GB filesystem space available before recreation; recheck space before downloads.
+## Model storage
+HF_HOME=/model-cache/huggingface on gemma-model-cache, an 8 GiB standard ReadWriteOnce PVC. Cache measured approximately 1.9 GiB after download. /dev/shm uses a memory-backed emptyDir limited to 256 MiB. The local PVC is hostpath storage, shares the VM disk with images, and is not resilient to cluster deletion. Claim size is not a dedicated physical disk or guaranteed hostpath quota.
 
-The root filesystem and /mnt were tmpfs. Persistent disk mounts included /data and /var/lib/containerd. Plan explicit persistent model storage; do not write model weights directly to /mnt. Persistent claims and container images share the underlying VM disk capacity.
+## Validation
+Server-side dry run passed. PVC bound. Final serving Pod became Ready with zero restarts. /v1/models and a complete /v1/chat/completions response passed through the Service. Cache survived image/Pod changes. No production reliability or load claims are made.
 
-## Differences from upstream
-Keep vLLM, Gemma, Kubernetes Deployment, Service and local API testing. Replace NVIDIA image/resource assumptions with verified ARM64 CPU settings. GPU-only arguments and environment settings must be reviewed, not copied blindly. Pin a validated image and explicitly budget model context, KV cache and concurrency for available RAM.
+## Compatibility decisions
+Original example requires NVIDIA hardware unavailable on this Mac. Preserve vLLM and Gemma while using ARM64 CPU serving. Tested 0.32.0 failed with CPU slot mapping during inference; 0.18.0 exceeded the memory budget; 0.30.0 with constrained buffers passed. See docs/troubleshooting.md for observations.
 
-## Pending validation
-Image availability and disk footprint, ARM kernel compatibility, dtype, model memory, resource requests, startup probes, shared memory, cache storage and actual inference. CPU flags alone do not prove compatibility.
-
-## References
-- https://github.com/kubernetes/examples/tree/master/AI/vllm-deployment
-- https://docs.vllm.ai/en/latest/getting_started/installation/cpu/
+Reference: https://github.com/kubernetes/examples/tree/master/AI/vllm-deployment

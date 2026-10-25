@@ -1,0 +1,40 @@
+{
+  "id": "chatcmpl-914f9bc0b01b77de",
+  "object": "chat.completion",
+  "created": 1792950688,
+  "model": "google/gemma-3-1b-it",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "Kubernetes is a powerful platform for automating deployment, scaling, and management of containerized applications. It allows you to efficiently run and manage applications across a cluster of machines, ensuring high availability and resilience.",
+        "refusal": null,
+        "annotations": null,
+        "audio": null,
+        "function_call": null,
+        "reasoning": null
+      },
+      "logprobs": null,
+      "finish_reason": "stop",
+      "stop_reason": 106,
+      "token_ids": null,
+      "routed_experts": null
+    }
+  ],
+  "service_tier": null,
+  "system_fingerprint": "vllm-0.30.0-5b5a1a46",
+  "usage": {
+    "prompt_tokens": 16,
+    "total_tokens": 57,
+    "completion_tokens": 41,
+    "prompt_tokens_details": null,
+    "completion_tokens_details": null
+  },
+  "prompt_logprobs": null,
+  "prompt_token_ids": null,
+  "prompt_text": null,
+  "kv_transfer_params": null,
+  "ec_transfer_params": null,
+  "metrics": null
+}

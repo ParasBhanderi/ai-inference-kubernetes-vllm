@@ -29,7 +29,7 @@ kubectl --context=minikube -n vllm-example get secret hf-secret
 ```
 Expect type Opaque and DATA 1. This verifies resource creation, not token validity. Do not rerun Secret creation if it already exists. Do not export its contents to YAML or show the token in screenshots. Revoke and replace any exposed token.
 
-## CPU image
+## Image preflight history
 Public Docker Hub metadata checked 2026-10-25 lists `vllm/vllm-openai-cpu:v0.32.0-arm64`, architecture arm64, with about 1.15 GiB compressed image data. Unpacked layers require additional space. Candidate digest: `sha256:433cbee5e0b689095484090454b6fcdf0c68fe3eabfbb251a5e39d442917a4a6`.
 
 Image pull and imports are verified on this VM: aarch64, PyTorch 2.13.0+cpu, vLLM 0.32.0. The token-auth check also authenticated the Secret and downloaded Gemma config.json successfully. Model weight loading and inference remain untested.
@@ -60,3 +60,5 @@ Recreate the check Pod to read the updated environment:
 kubectl --context=minikube -n vllm-example delete pod hf-auth-check
 kubectl --context=minikube apply -f manifests/checks/token-auth.yaml
 ```
+
+The lab serving manifest now pins vLLM 0.30.0 because 0.32.0 failed actual inference. Follow docs/deployment.md for the verified serving configuration; the older image checks above remain historical diagnostics.
