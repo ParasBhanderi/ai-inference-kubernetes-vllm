@@ -21,6 +21,7 @@ Docker Desktop is not required. Kubernetes uses containerd inside the Linux VM. 
 
 ## Documentation
 - [Requirements](prd.md)
+- [High-level system design](Design.md)
 - [Architecture](Architecture.md)
 - [Setup and credentials](docs/setup.md)
 - [Deployment and sample request](docs/deployment.md)
