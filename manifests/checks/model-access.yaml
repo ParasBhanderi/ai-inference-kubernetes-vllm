@@ -1,0 +1,51 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: gemma-access-check
+  namespace: vllm-example
+spec:
+  restartPolicy: Never
+  automountServiceAccountToken: false
+  containers:
+    - name: check
+      image: vllm/vllm-openai-cpu:v0.32.0-arm64@sha256:433cbee5e0b689095484090454b6fcdf0c68fe3eabfbb251a5e39d442917a4a6
+      imagePullPolicy: IfNotPresent
+      resources:
+        requests:
+          cpu: 100m
+          memory: 256Mi
+        limits:
+          cpu: "1"
+          memory: 1Gi
+      env:
+        - name: HF_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: hf-secret
+              key: hf_token
+        - name: HF_HOME
+          value: /tmp/huggingface
+        - name: HF_HUB_DISABLE_PROGRESS_BARS
+          value: "1"
+      command: [python3, -c]
+      args:
+        - |
+          import json, os, sys
+          from huggingface_hub import hf_hub_download
+          try:
+              path = hf_hub_download(
+                  repo_id="google/gemma-3-1b-it",
+                  filename="config.json",
+                  token=os.environ["HF_TOKEN"],
+              )
+              with open(path) as handle:
+                  config = json.load(handle)
+              print("Gemma configuration download: SUCCESS", flush=True)
+              print("Model type:", config.get("model_type"), flush=True)
+              print("No model weights downloaded.", flush=True)
+          except Exception as error:
+              response = getattr(error, "response", None)
+              print("Gemma configuration download: FAILED", flush=True)
+              print("Error type:", type(error).__name__, flush=True)
+              print("HTTP status:", getattr(response, "status_code", "unavailable"), flush=True)
+              sys.exit(1)

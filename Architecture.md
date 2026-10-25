@@ -20,10 +20,10 @@ Minikube manages a Linux ARM64 VM provided by VFkit. Kubernetes uses containerd.
 | Cluster | Minikube, Kubernetes v1.37.0 | Ready in screenshot |
 | Runtime | containerd 2.3.4 | Startup output |
 | CLI | kubectl in macOS Terminal | Working |
-| Model server | vLLM Linux ARM64 CPU image | Exact version and execution pending |
-| Model | google/gemma-3-1b-it | Account access granted; not downloaded |
-| Credentials | hf-secret, key hf_token | Planned, not confirmed created |
-| Namespace | vllm-example | Planned, not confirmed created |
+| Model server | vLLM Linux ARM64 CPU image | 0.32.0 image imports verified; inference pending |
+| Model | google/gemma-3-1b-it | config.json download verified; weights not downloaded |
+| Credentials | hf-secret, key hf_token | Created; screenshot verified |
+| Namespace | vllm-example | Created; screenshot verified |
 | Exposure | ClusterIP plus local port forwarding | Planned |
 
 ## Resources and storage

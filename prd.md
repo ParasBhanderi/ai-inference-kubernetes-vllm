@@ -26,7 +26,7 @@ Reproduce the learning goals of https://github.com/kubernetes/examples/tree/mast
 - [x] Cluster recreated with 8 GB RAM; node Ready.
 - [x] ARM64 CPU features inspected; asimd and bf16 present.
 - [x] User granted access to Gemma and created a Read token.
-- [ ] Namespace and Secret created and verified.
+- [x] Namespace and Secret created and verified (metadata only; model access test pending).
 - [ ] ARM64 vLLM image and resource settings validated.
 - [ ] Inference returns a generated response.
 - [ ] Documentation and reproducibility reviewed.

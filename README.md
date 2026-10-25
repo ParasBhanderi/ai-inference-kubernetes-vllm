@@ -5,7 +5,7 @@ A work-in-progress lab for serving Google Gemma with vLLM on local Kubernetes, a
 Repository: https://github.com/ParasBhanderi/ai-inference-kubernetes-vllm
 
 ## Status
-Kubernetes setup is verified. The recreated cluster has 8192 MB RAM, two CPU cores, and a Ready node. Gemma access has been granted and the user has created a Hugging Face Read token. Namespace and Secret creation have not yet been confirmed. No model or vLLM container has been deployed; local CPU inference is not yet validated.
+Kubernetes setup is verified. The recreated cluster has 8192 MB RAM, two CPU cores, and a Ready node. Gemma access has been granted and the user has created a Hugging Face Read token. Namespace, token authentication and Gemma configuration download are verified. The ARM64 vLLM 0.32.0 image import check completed successfully. Model weights have not been downloaded; local inference is not yet validated.
 
 ## Scope
 Follow [AI Inference with vLLM on Kubernetes](https://github.com/kubernetes/examples/tree/master/AI/vllm-deployment), keeping vLLM and `google/gemma-3-1b-it`. Document CPU-specific changes explicitly. An Nginx exercise is optional and outside the required project path.
@@ -38,7 +38,7 @@ kubectl get nodes
 ```
 
 ## Remaining work
-1. Create project namespace and token Secret privately.
+1. Completed: namespace, Secret and gated-model access verification; see [setup](docs/setup.md).
 2. Verify and pin an ARM64 CPU image; check its size and CPU compatibility.
 3. Prepare deployment, Service, storage and resource configuration for Gemma.
 4. Deploy, port-forward and verify an actual generated response.
@@ -52,3 +52,5 @@ Never commit Hugging Face tokens, Secret manifests containing credentials, kubec
 - https://docs.vllm.ai/en/latest/getting_started/installation/cpu/
 - https://huggingface.co/google/gemma-3-1b-it
 - https://kubernetes.io/docs/tasks/configmap-secret/managing-secret-using-kubectl/
+
+Verification details: [image and model access checks](docs/verification.md).
