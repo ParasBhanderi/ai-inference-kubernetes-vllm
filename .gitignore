@@ -8,3 +8,6 @@
 models/
 *.gguf
 *.safetensors
+
+# Local project continuity notes
+[Mm]emory.md

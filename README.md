@@ -26,7 +26,6 @@ Docker Desktop is not required. Kubernetes uses containerd inside the Linux VM. 
 - [Deployment and sample request](docs/deployment.md)
 - [Verification record](docs/verification.md)
 - [Troubleshooting](docs/troubleshooting.md)
-- [Project state](Memory.md)
 
 ## Deploy
 Complete [setup](docs/setup.md), including the namespace and token Secret, first. Then from the repository root:
